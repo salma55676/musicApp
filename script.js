@@ -39,7 +39,8 @@ async function handleSearch() {
     clearResults();
 
     try {
-        const response = await fetch(`https://api.deezer.com/search?q=${encodeURIComponent(query)}`);
+        // Using CORS proxy to avoid CORS issues
+        const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://api.deezer.com/search?q=${encodeURIComponent(query)}`)}`);
         
         if (!response.ok) {
             throw new Error('Failed to fetch data');
