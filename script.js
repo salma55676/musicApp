@@ -25,8 +25,8 @@ audioPlayer.addEventListener('ended', () => {
     }
 });
 
-// Main search function
-async function handleSearch() {
+// Main search function using JSONP
+function handleSearch() {
     const query = searchInput.value.trim();
     
     if (!query) {
@@ -38,28 +38,37 @@ async function handleSearch() {
     hideMessage();
     clearResults();
 
-    try {
-        // Using CORS proxy to avoid CORS issues
-        const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://api.deezer.com/search?q=${encodeURIComponent(query)}`)}`);
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch data');
-        }
-
-        const data = await response.json();
-        
+    // Create a unique callback name
+    const callbackName = 'deezerCallback_' + Date.now();
+    
+    // Create the callback function
+    window[callbackName] = function(data) {
         hideLoading();
-
+        
         if (data.data && data.data.length > 0) {
             displayResults(data.data);
         } else {
             showMessage(`No results found for "${query}". Try a different search term.`, 'info');
         }
-    } catch (error) {
+        
+        // Cleanup
+        delete window[callbackName];
+        document.body.removeChild(script);
+    };
+
+    // Create script element for JSONP request
+    const script = document.createElement('script');
+    script.src = `https://api.deezer.com/search?q=${encodeURIComponent(query)}&output=jsonp&callback=${callbackName}`;
+    
+    // Error handling
+    script.onerror = function() {
         hideLoading();
         showMessage('An error occurred while searching. Please try again.', 'error');
-        console.error('Search error:', error);
-    }
+        delete window[callbackName];
+        document.body.removeChild(script);
+    };
+    
+    document.body.appendChild(script);
 }
 
 // Display search results
